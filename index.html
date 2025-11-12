@@ -1,0 +1,519 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Clock, 
+  Target, 
+  FileText, 
+  RefreshCw, 
+  Shield, 
+  TrendingUp, 
+  BarChart3, 
+  Building, 
+  Calculator, 
+  MapPin, 
+  Maximize, 
+  CheckCircle, 
+  ChevronRight, 
+  Mail, 
+  Phone, 
+  Menu,
+  X,
+  ArrowRight
+} from 'lucide-react';
+
+// --- Components ---
+
+const Badge = ({ icon, text }) => (
+  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+    {icon} {text}
+  </span>
+);
+
+const FeatureCard = ({ icon: Icon, title, description, highlight }) => (
+  <div className="group bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+    <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors">
+      <Icon className="text-blue-600 group-hover:text-white transition-colors" size={24} />
+    </div>
+    <h3 className="text-xl font-bold text-slate-900 mb-3">{title}</h3>
+    <p className="text-slate-600 leading-relaxed mb-4">{description}</p>
+    {highlight && (
+      <div className="bg-slate-50 px-3 py-2 rounded-lg text-sm text-slate-700 border-l-2 border-blue-500">
+        {highlight}
+      </div>
+    )}
+  </div>
+);
+
+const MiniFeature = ({ icon: Icon, title, desc }) => (
+  <div className="flex items-start gap-4 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300 cursor-default border border-transparent hover:border-slate-100">
+    <div className="bg-blue-50 p-2 rounded-lg text-blue-600 shrink-0">
+      <Icon size={20} />
+    </div>
+    <div>
+      <h4 className="font-semibold text-slate-900 text-sm">{title}</h4>
+      <p className="text-slate-500 text-sm mt-1">{desc}</p>
+    </div>
+  </div>
+);
+
+const UseCaseCard = ({ title, scenario, result }) => (
+  <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+      <h3 className="font-bold text-slate-800">{title}</h3>
+      <div className="p-1.5 bg-blue-100 rounded text-blue-700"><Building size={16}/></div>
+    </div>
+    <div className="p-6 space-y-4">
+      <div>
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Ausgangslage</p>
+        <p className="text-slate-600 text-sm">{scenario}</p>
+      </div>
+      <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+        <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+          <CheckCircle size={12} /> Lösung
+        </p>
+        <p className="text-slate-800 text-sm font-medium">{result}</p>
+      </div>
+    </div>
+  </div>
+);
+
+const Step = ({ number, title, desc }) => (
+  <div className="relative flex flex-col items-center text-center group">
+    <div className="w-16 h-16 bg-white border-2 border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-sm group-hover:border-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 mb-6 relative z-10">
+      {number}
+    </div>
+    <h3 className="text-lg font-bold text-slate-900 mb-2">{title}</h3>
+    <p className="text-slate-600 text-sm max-w-xs">{desc}</p>
+  </div>
+);
+
+export default function App() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Calculator State
+  const [calcMode, setCalcMode] = useState('balanced'); // Default set to balanced (45%)
+  const [calcInputs, setCalcInputs] = useState({
+    gutachten: 3,
+    zeitaufwand: 6,
+    stundensatz: 120
+  });
+  
+  const [calcResults, setCalcResults] = useState({
+    zeitGespart: 0,
+    kostenMonat: 0,
+    mehrGutachten: 0,
+    jahresErsparnis: 0
+  });
+
+  useEffect(() => {
+    // Switch between conservative (30%), balanced (45%), and optimistic (60%)
+    let zeitersparnisProzent;
+    if (calcMode === 'optimistic') {
+      zeitersparnisProzent = 0.60;
+    } else if (calcMode === 'conservative') {
+      zeitersparnisProzent = 0.30;
+    } else { // 'balanced'
+      zeitersparnisProzent = 0.45;
+    }
+    
+    const gesamtStundenAktuell = calcInputs.gutachten * calcInputs.zeitaufwand;
+    const zeitGespart = gesamtStundenAktuell * zeitersparnisProzent;
+    const kostenMonat = zeitGespart * calcInputs.stundensatz;
+    const jahresErsparnis = kostenMonat * 12;
+    
+    const neueZeitProGutachten = calcInputs.zeitaufwand * (1 - zeitersparnisProzent);
+    const mehrGutachten = Math.floor(zeitGespart / neueZeitProGutachten);
+
+    setCalcResults({
+      zeitGespart: Math.round(zeitGespart),
+      kostenMonat: Math.round(kostenMonat),
+      mehrGutachten,
+      jahresErsparnis: Math.round(jahresErsparnis)
+    });
+  }, [calcInputs, calcMode]);
+
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    setMobileMenuOpen(false);
+  };
+
+  const getModeText = () => {
+    if (calcMode === 'optimistic') return 'einer optimistischen';
+    if (calcMode === 'conservative') return 'einer konservativen';
+    return 'einer ausgewogenen';
+  };
+
+  return (
+    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100">
+      
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-20 items-center">
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-600 p-2 rounded-lg">
+                <TrendingUp className="text-white" size={24} />
+              </div>
+              <span className="font-bold text-xl tracking-tight text-slate-900">Immo-SV-Gutachten</span>
+            </div>
+
+            <div className="hidden md:flex items-center gap-8">
+              <button onClick={() => scrollTo('benefits')} className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Vorteile</button>
+              <button onClick={() => scrollTo('features')} className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Funktionen</button>
+              <button onClick={() => scrollTo('calculator')} className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">ROI Rechner</button>
+              <button onClick={() => scrollTo('contact')} className="bg-blue-600 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20">
+                Gespräch vereinbaren
+              </button>
+            </div>
+
+            <button className="md:hidden text-slate-600" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              {mobileMenuOpen ? <X /> : <Menu />}
+            </button>
+          </div>
+        </div>
+        
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-100 bg-white p-4 space-y-2 absolute w-full shadow-xl">
+            <button onClick={() => scrollTo('benefits')} className="block w-full text-left px-4 py-3 rounded-lg hover:bg-slate-50">Vorteile</button>
+            <button onClick={() => scrollTo('features')} className="block w-full text-left px-4 py-3 rounded-lg hover:bg-slate-50">Funktionen</button>
+            <button onClick={() => scrollTo('calculator')} className="block w-full text-left px-4 py-3 rounded-lg hover:bg-slate-50">ROI Rechner</button>
+            <button onClick={() => scrollTo('contact')} className="block w-full mt-4 bg-blue-600 text-white px-4 py-3 rounded-lg font-medium text-center">Kontakt</button>
+          </div>
+        )}
+      </nav>
+
+      {/* Hero Section */}
+      <section className="relative pt-20 pb-32 overflow-hidden bg-blue-950">
+        {/* Abstract Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-blue-600 opacity-20 blur-3xl"></div>
+          <div className="absolute top-1/2 -left-24 w-72 h-72 rounded-full bg-indigo-500 opacity-20 blur-3xl"></div>
+          {/* Subtle Grid Pattern */}
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex flex-wrap justify-center gap-2 mb-8 animate-in slide-in-from-bottom-4 fade-in duration-700">
+            <Badge icon={<span className="text-lg">🇦🇹</span>} text="ÖNORM-konform" />
+            <Badge icon={<Shield size={14}/>} text="Gerichtsfest" />
+            <Badge icon={<Building size={14}/>} text="Bankanerkannt" />
+            <Badge icon={<CheckCircle size={14}/>} text="DSGVO-sicher" />
+          </div>
+
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight mb-6 leading-tight animate-in slide-in-from-bottom-8 fade-in duration-1000">
+            Immobiliengutachten <br className="hidden md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">im digitalen Zeitalter</span>
+          </h1>
+
+          <p className="text-lg md:text-xl text-blue-100 max-w-3xl mx-auto mb-10 leading-relaxed animate-in slide-in-from-bottom-10 fade-in duration-1000">
+            KI-gestützte Werkzeuge speziell für österreichische Sachverständige. 
+            Erstellen Sie Gutachten effizienter – ohne Kompromisse bei Qualität und Genauigkeit.
+          </p>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-4 animate-in slide-in-from-bottom-12 fade-in duration-1000">
+            <button onClick={() => scrollTo('calculator')} className="bg-white text-blue-900 hover:bg-blue-50 px-8 py-4 rounded-full font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-2">
+              <Calculator size={20} /> Ersparnis berechnen
+            </button>
+            <button onClick={() => scrollTo('features')} className="bg-blue-800/30 hover:bg-blue-800/50 backdrop-blur-sm text-white border border-blue-400/30 px-8 py-4 rounded-full font-bold text-lg transition-all flex items-center justify-center gap-2">
+              Funktionen entdecken <ArrowRight size={20} />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Benefits */}
+      <section id="benefits" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">Warum KI-gestützte Bewertung?</h2>
+            <p className="text-lg text-slate-600">
+              Die Immobilienbewertung ist komplex. Moderne Tools unterstützen Sie dabei, Ihre Expertise skalierbar zu machen.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <FeatureCard 
+              icon={Clock}
+              title="Zeitersparnis"
+              description="Automatisierung repetitiver Aufgaben wie Marktdatenrecherche, Flächenberechnungen und Dokumentenerstellung."
+              highlight="2-3 Stunden pro Gutachten"
+            />
+            <FeatureCard 
+              icon={Target}
+              title="Höhere Genauigkeit"
+              description="Zugriff auf aktuelle Marktdaten aus allen relevanten Quellen. Systematische Bewertungsmethodik nach österreichischen Standards."
+              highlight="Datenbasis: 50.000+ Objekte"
+            />
+            <FeatureCard 
+              icon={FileText}
+              title="Prof. Dokumentation"
+              description="Strukturierte, nachvollziehbare Gutachten mit allen erforderlichen Anlagen – individuell anpassbar nach Ihren Vorgaben."
+              highlight="Bank-, Gerichts- & Kurzgutachten"
+            />
+            <FeatureCard 
+              icon={RefreshCw}
+              title="Immer Aktuell"
+              description="Automatische Updates von Marktpreisen, ÖNORM-Anforderungen und rechtlichen Rahmenbedingungen."
+              highlight="Tägliche Daten-Updates"
+            />
+            <FeatureCard 
+              icon={Shield}
+              title="Rechtssicherheit"
+              description="Einhaltung aller relevanten österreichischen Normen, Standards und rechtlichen Vorgaben."
+              highlight="IVS, EAG, LBG konform"
+            />
+            <FeatureCard 
+              icon={TrendingUp}
+              title="Skalierbarkeit"
+              description="Bearbeiten Sie mehr Aufträge ohne zusätzliches Personal oder längere Arbeitszeiten."
+              highlight="+30% mehr Kapazität"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Core Features (Compact Grid) */}
+      <section id="features" className="py-24 bg-slate-50 border-y border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-12">
+            <div className="max-w-2xl">
+              <h2 className="text-3xl font-bold text-slate-900 mb-4">8 Spezialisierte Funktionsbereiche</h2>
+              <p className="text-lg text-slate-600">
+                Entwickelt in Zusammenarbeit mit Immobiliensachverständigen – jeder Bereich deckt einen kritischen Teil des Prozesses ab.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MiniFeature icon={BarChart3} title="Liegenschaftsbewertung" desc="Ertragswert, Sachwert, Vergleichswert & DCF." />
+            <MiniFeature icon={TrendingUp} title="Marktdaten-Analyse" desc="Echtzeit-Zugriff auf Preise aller AT-Portale." />
+            <MiniFeature icon={Building} title="Bausubstanz" desc="Systematische Zustandsanalyse & Bauteilkatalog." />
+            <MiniFeature icon={Calculator} title="Rendite-Kalkulation" desc="Cash-Flow, Steueraspekte & Prognosen." />
+            <MiniFeature icon={FileText} title="Grundbuch-Analyse" desc="Eigentum, Lasten & Dienstbarkeiten prüfen." />
+            <MiniFeature icon={MapPin} title="Lage-Bewertung" desc="Infrastruktur, Lärm & Entwicklungspotenzial." />
+            <MiniFeature icon={Maximize} title="Flächenberechnung" desc="ÖNORM B 1800 konform aus Plänen." />
+            <MiniFeature icon={FileText} title="Gutachten-Generator" desc="Vollautomatische Dokumentenerstellung." />
+          </div>
+        </div>
+      </section>
+
+      {/* Calculator Section */}
+      <section id="calculator" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-blue-900 rounded-3xl p-8 md:p-12 shadow-2xl text-white overflow-hidden relative">
+            <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-blue-500 rounded-full opacity-20 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-72 h-72 bg-indigo-600 rounded-full opacity-20 blur-3xl"></div>
+            
+            <div className="grid lg:grid-cols-2 gap-16 relative z-10">
+              {/* Left: Inputs */}
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-3xl font-bold">Ihr Einsparungspotenzial</h2>
+                </div>
+                
+                {/* Toggle Switch */}
+                <div className="flex bg-blue-950/50 p-1 rounded-lg mb-8 w-fit border border-blue-700/30">
+                  <button 
+                    onClick={() => setCalcMode('conservative')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${calcMode === 'conservative' ? 'bg-white text-blue-900 shadow-sm' : 'text-blue-300 hover:text-white'}`}
+                  >
+                    Konservativ (30%)
+                  </button>
+                  <button 
+                    onClick={() => setCalcMode('balanced')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${calcMode === 'balanced' ? 'bg-white text-blue-900 shadow-sm' : 'text-blue-300 hover:text-white'}`}
+                  >
+                    Ausgewogen (45%)
+                  </button>
+                  <button 
+                    onClick={() => setCalcMode('optimistic')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${calcMode === 'optimistic' ? 'bg-white text-blue-900 shadow-sm' : 'text-blue-300 hover:text-white'}`}
+                  >
+                    Optimistisch (60%)
+                  </button>
+                </div>
+
+                <p className="text-blue-100 mb-10 leading-relaxed">
+                  Berechnen Sie Zeit und Kosten, die Sie mit digitalisierten Prozessen einsparen. 
+                  Die Werte basieren auf {getModeText()} Schätzung der Zeitersparnis.
+                </p>
+
+                <div className="space-y-8">
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <label className="font-medium text-blue-100">Durchschnittliche Anzahl Gutachten</label>
+                      <span className="font-bold text-white text-xl">{calcInputs.gutachten}</span>
+                    </div>
+                    <input 
+                      type="range" min="1" max="20" 
+                      value={calcInputs.gutachten}
+                      onChange={(e) => setCalcInputs({...calcInputs, gutachten: parseInt(e.target.value)})}
+                      className="w-full h-2 bg-blue-800 rounded-lg appearance-none cursor-pointer accent-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <label className="font-medium text-blue-100">Durchschnittliche Arbeitszeit</label>
+                      <span className="font-bold text-white text-xl">{calcInputs.zeitaufwand} h</span>
+                    </div>
+                    <input 
+                      type="range" min="2" max="15" step="0.5"
+                      value={calcInputs.zeitaufwand}
+                      onChange={(e) => setCalcInputs({...calcInputs, zeitaufwand: parseFloat(e.target.value)})}
+                      className="w-full h-2 bg-blue-800 rounded-lg appearance-none cursor-pointer accent-white"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <label className="font-medium text-blue-100">Stundensatz (€)</label>
+                      <span className="font-bold text-white text-xl">€ {calcInputs.stundensatz}</span>
+                    </div>
+                    <input 
+                      type="range" min="50" max="300" step="10"
+                      value={calcInputs.stundensatz}
+                      onChange={(e) => setCalcInputs({...calcInputs, stundensatz: parseInt(e.target.value)})}
+                      className="w-full h-2 bg-blue-800 rounded-lg appearance-none cursor-pointer accent-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Results */}
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 flex flex-col justify-center shadow-lg">
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center border-b border-white/10 pb-4">
+                    <span className="text-blue-100 flex items-center gap-2"><Clock size={18}/> Zeitersparnis / Monat</span>
+                    <span className="text-2xl font-bold text-white">{calcResults.zeitGespart} Std.</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-white/10 pb-4">
+                    <span className="text-blue-100 flex items-center gap-2"><Target size={18}/> Mehr Gutachten möglich</span>
+                    <span className="text-2xl font-bold text-green-300">+{calcResults.mehrGutachten}</span>
+                  </div>
+                  <div className="pt-2">
+                    <p className="text-blue-200 text-sm uppercase tracking-wide mb-1">Jährliches Potenzial</p>
+                    <p className="text-5xl font-bold text-white">
+                      € {calcResults.jahresErsparnis.toLocaleString('de-AT')}
+                    </p>
+                  </div>
+                  <button onClick={() => scrollTo('contact')} className="w-full mt-4 bg-white hover:bg-blue-50 text-blue-900 py-4 rounded-xl font-bold transition-all shadow-lg">
+                    Jetzt Potenzial realisieren
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Use Cases */}
+      <section className="py-24 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">Praxisbeispiele aus Österreich</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <UseCaseCard 
+              title="Bankgutachten"
+              scenario="Sachverständigenbüro in Wien, 8-12 Verkehrswertgutachten/Monat. Zeitaufwand traditionell: 5-7h."
+              result="Reduktion auf 3-4h durch automatisierte Daten. +3 Gutachten pro Monat möglich."
+            />
+            <UseCaseCard 
+              title="Gerichtsgutachten"
+              scenario="SV in Graz, komplexe Streitfälle mit hoher Dokumentationspflicht und Haftungsrisiko."
+              result="Rechtssichere Archivierung und lückenlose Herleitung minimieren Nachfragen."
+            />
+            <UseCaseCard 
+              title="Zinshaus-Portfolios"
+              scenario="Bewertung von 15 Zinshäusern für Investor. Traditionelle Dauer: 8-10 Wochen."
+              result="Parallele Bearbeitung reduziert Projektdauer auf 4-5 Wochen bei höherer Konsistenz."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Process Flow */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">So funktioniert's</h2>
+            <p className="text-slate-600">Integration in Ihren Workflow ohne Prozessbruch.</p>
+          </div>
+          
+          <div className="relative">
+            {/* Connecting Line (Desktop) */}
+            <div className="hidden md:block absolute top-8 left-0 w-full h-0.5 bg-slate-100 -z-10"></div>
+            
+            <div className="grid md:grid-cols-4 gap-12">
+              <Step number="1" title="Datenerfassung" desc="Grunddaten, Adresse und Unterlagen eingeben oder hochladen." />
+              <Step number="2" title="KI-Analyse" desc="System sammelt Marktdaten und berechnet Grundlagen." />
+              <Step number="3" title="Expertise" desc="Sie prüfen Ergebnisse und ergänzen Ihre Facheinschätzung." />
+              <Step number="4" title="Fertigstellung" desc="Automatischer Export des fertigen Gutachtens inkl. Anlagen." />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Standards & Trust (Updated to Light Theme) */}
+      <section className="py-20 bg-slate-50 text-center border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h3 className="text-slate-500 font-semibold uppercase tracking-widest mb-8 text-sm">Konform mit österreichischen Standards</h3>
+          <div className="flex flex-wrap justify-center gap-4">
+            {['ÖNORM B 1800', 'IVS Standards', 'EAG Konform', 'LBG Gesetz', 'II. BV', 'DSGVO Safe'].map((std) => (
+              <div key={std} className="px-6 py-3 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold hover:border-blue-500 hover:text-blue-600 hover:shadow-md transition-all cursor-default">
+                {std}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="py-24 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl font-bold text-slate-900 mb-6">Interessiert?</h2>
+          <p className="text-xl text-slate-600 mb-12 leading-relaxed">
+            Erfahren Sie mehr darüber, wie digitale Tools Ihre Gutachtertätigkeit unterstützen können.
+          </p>
+
+          <div className="grid md:grid-cols-5 gap-6 max-w-4xl mx-auto items-center">
+            {/* Mail Button */}
+            <button onClick={() => window.location.href = 'mailto:kovac@christian-kovac.at'} className="group p-6 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 transition-all md:col-span-2">
+              <div className="w-12 h-12 mx-auto bg-white rounded-full flex items-center justify-center shadow-sm mb-4 text-blue-600 group-hover:scale-110 transition-transform">
+                <Mail size={24} />
+              </div>
+              <h3 className="font-bold text-slate-900">E-Mail</h3>
+              <p className="text-sm text-slate-500">kovac@christian-kovac.at</p>
+            </button>
+
+            {/* Portrait Photo */}
+            <div className="flex flex-col items-center justify-center order-first md:order-none">
+              <img 
+                src="https://i.imgur.com/XtLXnn6.jpeg" 
+                alt="Porträt Christian Kovac" 
+                className="w-40 h-40 rounded-full object-cover shadow-lg border-4 border-white"
+              />
+              <p className="mt-4 font-bold text-slate-900 text-lg">Dr. Christian Kovac</p>
+            </div>
+            
+            {/* Phone Button */}
+            <button onClick={() => window.location.href = 'tel:+436645446'} className="group p-6 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 transition-all md:col-span-2">
+              <div className="w-12 h-12 mx-auto bg-white rounded-full flex items-center justify-center shadow-sm mb-4 text-blue-600 group-hover:scale-110 transition-transform">
+                <Phone size={24} />
+              </div>
+              <h3 className="font-bold text-slate-900">Telefon</h3>
+              <p className="text-sm text-slate-500">+43(0)0664 544 6</p>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-200 py-12 text-center">
+        <div className="max-w-7xl mx-auto px-4">
+          <p className="font-bold text-slate-900">© 2025 KI-Consulting für österreichische Sachverständige</p>
+          <p className="text-slate-500 text-sm mt-2">🇦🇹 Spezialisiert auf österreichische Normen und Rechtslage</p>
+        </div>
+      </footer>
+    </div>
+  );
+}
