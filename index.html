@@ -1,519 +1,668 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Clock, 
-  Target, 
-  FileText, 
-  RefreshCw, 
-  Shield, 
-  TrendingUp, 
-  BarChart3, 
-  Building, 
-  Calculator, 
-  MapPin, 
-  Maximize, 
-  CheckCircle, 
-  ChevronRight, 
-  Mail, 
-  Phone, 
-  Menu,
-  X,
-  ArrowRight
-} from 'lucide-react';
-
-// --- Components ---
-
-const Badge = ({ icon, text }) => (
-  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-    {icon} {text}
-  </span>
-);
-
-const FeatureCard = ({ icon: Icon, title, description, highlight }) => (
-  <div className="group bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-    <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors">
-      <Icon className="text-blue-600 group-hover:text-white transition-colors" size={24} />
-    </div>
-    <h3 className="text-xl font-bold text-slate-900 mb-3">{title}</h3>
-    <p className="text-slate-600 leading-relaxed mb-4">{description}</p>
-    {highlight && (
-      <div className="bg-slate-50 px-3 py-2 rounded-lg text-sm text-slate-700 border-l-2 border-blue-500">
-        {highlight}
-      </div>
-    )}
-  </div>
-);
-
-const MiniFeature = ({ icon: Icon, title, desc }) => (
-  <div className="flex items-start gap-4 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300 cursor-default border border-transparent hover:border-slate-100">
-    <div className="bg-blue-50 p-2 rounded-lg text-blue-600 shrink-0">
-      <Icon size={20} />
-    </div>
-    <div>
-      <h4 className="font-semibold text-slate-900 text-sm">{title}</h4>
-      <p className="text-slate-500 text-sm mt-1">{desc}</p>
-    </div>
-  </div>
-);
-
-const UseCaseCard = ({ title, scenario, result }) => (
-  <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-    <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-      <h3 className="font-bold text-slate-800">{title}</h3>
-      <div className="p-1.5 bg-blue-100 rounded text-blue-700"><Building size={16}/></div>
-    </div>
-    <div className="p-6 space-y-4">
-      <div>
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Ausgangslage</p>
-        <p className="text-slate-600 text-sm">{scenario}</p>
-      </div>
-      <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-        <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1 flex items-center gap-1">
-          <CheckCircle size={12} /> Lösung
-        </p>
-        <p className="text-slate-800 text-sm font-medium">{result}</p>
-      </div>
-    </div>
-  </div>
-);
-
-const Step = ({ number, title, desc }) => (
-  <div className="relative flex flex-col items-center text-center group">
-    <div className="w-16 h-16 bg-white border-2 border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-sm group-hover:border-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 mb-6 relative z-10">
-      {number}
-    </div>
-    <h3 className="text-lg font-bold text-slate-900 mb-2">{title}</h3>
-    <p className="text-slate-600 text-sm max-w-xs">{desc}</p>
-  </div>
-);
-
-export default function App() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Calculator State
-  const [calcMode, setCalcMode] = useState('balanced'); // Default set to balanced (45%)
-  const [calcInputs, setCalcInputs] = useState({
-    gutachten: 3,
-    zeitaufwand: 6,
-    stundensatz: 120
-  });
-  
-  const [calcResults, setCalcResults] = useState({
-    zeitGespart: 0,
-    kostenMonat: 0,
-    mehrGutachten: 0,
-    jahresErsparnis: 0
-  });
-
-  useEffect(() => {
-    // Switch between conservative (30%), balanced (45%), and optimistic (60%)
-    let zeitersparnisProzent;
-    if (calcMode === 'optimistic') {
-      zeitersparnisProzent = 0.60;
-    } else if (calcMode === 'conservative') {
-      zeitersparnisProzent = 0.30;
-    } else { // 'balanced'
-      zeitersparnisProzent = 0.45;
+<!DOCTYPE html>
+<html lang="de" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Immo-SV-Gutachten | Dr. Christian Kovac</title>
+  <!-- Tailwind CSS wird hier geladen -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Font (Inter) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* Wir setzen die Schriftart für die gesamte Seite */
+    body {
+      font-family: 'Inter', sans-serif;
     }
+    /* Stil für die Range-Slider, damit sie im dunklen Modus (Blau) weiß sind */
+    input[type="range"].accent-white::-webkit-slider-thumb {
+      background-color: white;
+      border-radius: 50%;
+      height: 1.25rem;
+      width: 1.25rem;
+      margin-top: -0.375rem; /* Zentrierung */
+    }
+    input[type="range"].accent-white::-moz-range-thumb {
+      background-color: white;
+      border-radius: 50%;
+      height: 1.25rem;
+      width: 1.25rem;
+      border: 0;
+    }
+    input[type="range"].accent-white::-ms-thumb {
+      background-color: white;
+      border-radius: 50%;
+      height: 1.25rem;
+      width: 1.25rem;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100">
+
+  <!-- SVG Icons Definition (ersetzt Lucide-React) -->
+  <svg width="0" height="0" style="display:none;">
+    <defs>
+      <symbol id="icon-trending-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></symbol>
+      <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></symbol>
+      <symbol id="icon-building" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></symbol>
+      <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></symbol>
+      <symbol id="icon-calculator" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><line x1="16"V" y1="10" x2="16" y2="10"></line><line x1="12" y1="10" x2="12" y2="10"></line><line x1="8" y1="10" x2="8" y2="10"></line><line x1="12" y1="14" x2="12" y2="18"></line><line x1="8" y1="14" x2="8" y2="18"></line></symbol>
+      <symbol id="icon-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></symbol>
+      <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></symbol>
+      <symbol id="icon-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></symbol>
+      <symbol id="icon-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></symbol>
+      <symbol id="icon-refresh-cw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></symbol>
+      <symbol id="icon-bar-chart-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></symbol>
+      <symbol id="icon-map-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></symbol>
+      <symbol id="icon-maximize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></symbol>
+      <symbol id="icon-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></symbol>
+      <symbol id="icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></symbol>
+      <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></symbol>
+      <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></symbol>
+    </defs>
+  </svg>
+  
+  <!-- Navigation -->
+  <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-20 items-center">
+        <a href="#" class="flex items-center gap-2">
+          <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-2 rounded-lg shadow-md">
+            <svg class="text-white w-6 h-6"><use href="#icon-trending-up"></use></svg>
+          </div>
+          <span class="font-bold text-xl tracking-tight text-slate-900">Immo-SV-Gutachten</span>
+        </a>
+
+        <div class="hidden md:flex items-center gap-8">
+          <a href="#benefits" class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Vorteile</a>
+          <a href="#features" class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Funktionen</a>
+          <a href="#calculator" class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">ROI Rechner</a>
+          <a href="#contact" class="bg-blue-600 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20">
+            Gespräch vereinbaren
+          </a>
+        </div>
+
+        <button id="menu-button" class="md:hidden text-slate-600">
+          <svg id="menu-icon-open" class="w-6 h-6"><use href="#icon-menu"></use></svg>
+          <svg id="menu-icon-close" class="w-6 h-6 hidden"><use href="#icon-x"></use></svg>
+        </button>
+      </div>
+    </div>
     
-    const gesamtStundenAktuell = calcInputs.gutachten * calcInputs.zeitaufwand;
-    const zeitGespart = gesamtStundenAktuell * zeitersparnisProzent;
-    const kostenMonat = zeitGespart * calcInputs.stundensatz;
-    const jahresErsparnis = kostenMonat * 12;
-    
-    const neueZeitProGutachten = calcInputs.zeitaufwand * (1 - zeitersparnisProzent);
-    const mehrGutachten = Math.floor(zeitGespart / neueZeitProGutachten);
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-slate-100 bg-white p-4 space-y-2 absolute w-full shadow-xl">
+      <a href="#benefits" class="block w-full text-left px-4 py-3 rounded-lg hover:bg-slate-50">Vorteile</a>
+      <a href="#features" class="block w-full text-left px-4 py-3 rounded-lg hover:bg-slate-50">Funktionen</a>
+      <a href="#calculator" class="block w-full text-left px-4 py-3 rounded-lg hover:bg-slate-50">ROI Rechner</a>
+      <a href="#contact" class="block w-full mt-4 bg-blue-600 text-white px-4 py-3 rounded-lg font-medium text-center">Kontakt</a>
+    </div>
+  </nav>
 
-    setCalcResults({
-      zeitGespart: Math.round(zeitGespart),
-      kostenMonat: Math.round(kostenMonat),
-      mehrGutachten,
-      jahresErsparnis: Math.round(jahresErsparnis)
-    });
-  }, [calcInputs, calcMode]);
+  <!-- Hero Section -->
+  <section class="relative pt-20 pb-32 overflow-hidden bg-blue-950">
+    <div class="absolute inset-0 overflow-hidden">
+      <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-blue-600 opacity-20 blur-3xl"></div>
+      <div class="absolute top-1/2 -left-24 w-72 h-72 rounded-full bg-indigo-500 opacity-20 blur-3xl"></div>
+      <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
+    </div>
 
-  const scrollTo = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-    setMobileMenuOpen(false);
-  };
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div class="inline-flex flex-wrap justify-center gap-2 mb-8">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+          <span class="text-lg">🇦🇹</span> ÖNORM-konform
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+          <svg class="w-3.5 h-3.5"><use href="#icon-shield"></use></svg> Gerichtsfest
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+          <svg class="w-3.5 h-3.5"><use href="#icon-building"></use></svg> Bankanerkannt
+        </span>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+          <svg class="w-3.5 h-3.5"><use href="#icon-check-circle"></use></svg> DSGVO-sicher
+        </span>
+      </div>
 
-  const getModeText = () => {
-    if (calcMode === 'optimistic') return 'einer optimistischen';
-    if (calcMode === 'conservative') return 'einer konservativen';
-    return 'einer ausgewogenen';
-  };
+      <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight mb-6 leading-tight">
+        Immobiliengutachten <br class="hidden md:block">
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">im digitalen Zeitalter</span>
+      </h1>
 
-  return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100">
-      
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-20 items-center">
-            <div className="flex items-center gap-2">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <TrendingUp className="text-white" size={24} />
-              </div>
-              <span className="font-bold text-xl tracking-tight text-slate-900">Immo-SV-Gutachten</span>
+      <p class="text-lg md:text-xl text-blue-100 max-w-3xl mx-auto mb-10 leading-relaxed">
+        KI-gestützte Werkzeuge speziell für österreichische Sachverständige. 
+        Erstellen Sie Gutachten effizienter – ohne Kompromisse bei Qualität und Genauigkeit.
+      </p>
+
+      <div class="flex flex-col sm:flex-row justify-center gap-4">
+        <a href="#calculator" class="bg-white text-blue-900 hover:bg-blue-50 px-8 py-4 rounded-full font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-2">
+          <svg class="w-5 h-5"><use href="#icon-calculator"></use></svg> Ersparnis berechnen
+        </a>
+        <a href="#features" class="bg-blue-800/30 hover:bg-blue-800/50 backdrop-blur-sm text-white border border-blue-400/30 px-8 py-4 rounded-full font-bold text-lg transition-all flex items-center justify-center gap-2">
+          Funktionen entdecken <svg class="w-5 h-5"><use href="#icon-arrow-right"></use></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Benefits -->
+  <section id="benefits" class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <h2 class="text-3xl font-bold text-slate-900 mb-4">Warum KI-gestützte Bewertung?</h2>
+        <p class="text-lg text-slate-600">
+          Die Immobilienbewertung ist komplex. Moderne Tools unterstützen Sie dabei, Ihre Expertise skalierbar zu machen.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- FeatureCard 1 -->
+        <div class="group bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors">
+            <svg class="w-6 h-6 text-blue-600 group-hover:text-white transition-colors"><use href="#icon-clock"></use></svg>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-3">Zeitersparnis</h3>
+          <p class="text-slate-600 leading-relaxed mb-4">Automatisierung repetitiver Aufgaben wie Marktdatenrecherche, Flächenberechnungen und Dokumentenerstellung.</p>
+          <div class="bg-slate-50 px-3 py-2 rounded-lg text-sm text-slate-700 border-l-2 border-blue-500">
+            2-3 Stunden pro Gutachten
+          </div>
+        </div>
+        <!-- FeatureCard 2 -->
+        <div class="group bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors">
+            <svg class="w-6 h-6 text-blue-600 group-hover:text-white transition-colors"><use href="#icon-target"></use></svg>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-3">Höhere Genauigkeit</h3>
+          <p class="text-slate-600 leading-relaxed mb-4">Zugriff auf aktuelle Marktdaten aus allen relevanten Quellen. Systematische Bewertungsmethodik nach österreichischen Standards.</p>
+          <div class="bg-slate-50 px-3 py-2 rounded-lg text-sm text-slate-700 border-l-2 border-blue-500">
+            Datenbasis: 50.000+ Objekte
+          </div>
+        </div>
+        <!-- FeatureCard 3 -->
+        <div class="group bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors">
+            <svg class="w-6 h-6 text-blue-600 group-hover:text-white transition-colors"><use href="#icon-file-text"></use></svg>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-3">Prof. Dokumentation</h3>
+          <p class="text-slate-600 leading-relaxed mb-4">Strukturierte, nachvollziehbare Gutachten mit allen erforderlichen Anlagen – individuell anpassbar nach Ihren Vorgaben.</p>
+          <div class="bg-slate-50 px-3 py-2 rounded-lg text-sm text-slate-700 border-l-2 border-blue-500">
+            Bank-, Gerichts- & Kurzgutachten
+          </div>
+        </div>
+        <!-- FeatureCard 4 -->
+        <div class="group bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors">
+            <svg class="w-6 h-6 text-blue-600 group-hover:text-white transition-colors"><use href="#icon-refresh-cw"></use></svg>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-3">Immer Aktuell</h3>
+          <p class="text-slate-600 leading-relaxed mb-4">Automatische Updates von Marktpreisen, ÖNORM-Anforderungen und rechtlichen Rahmenbedingungen.</p>
+          <div class="bg-slate-50 px-3 py-2 rounded-lg text-sm text-slate-700 border-l-2 border-blue-500">
+            Tägliche Daten-Updates
+          </div>
+        </div>
+        <!-- FeatureCard 5 -->
+        <div class="group bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors">
+            <svg class="w-6 h-6 text-blue-600 group-hover:text-white transition-colors"><use href="#icon-shield"></use></svg>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-3">Rechtssicherheit</h3>
+          <p class="text-slate-600 leading-relaxed mb-4">Einhaltung aller relevanten österreichischen Normen, Standards und rechtlichen Vorgaben.</p>
+          <div class="bg-slate-50 px-3 py-2 rounded-lg text-sm text-slate-700 border-l-2 border-blue-500">
+            IVS, EAG, LBG konform
+          </div>
+        </div>
+        <!-- FeatureCard 6 -->
+        <div class="group bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors">
+            <svg class="w-6 h-6 text-blue-600 group-hover:text-white transition-colors"><use href="#icon-trending-up"></use></svg>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-3">Skalierbarkeit</h3>
+          <p class="text-slate-600 leading-relaxed mb-4">Bearbeiten Sie mehr Aufträge ohne zusätzliches Personal oder längere Arbeitszeiten.</p>
+          <div class="bg-slate-50 px-3 py-2 rounded-lg text-sm text-slate-700 border-l-2 border-blue-500">
+            +30% mehr Kapazität
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Core Features (Compact Grid) -->
+  <section id="features" class="py-24 bg-slate-50 border-y border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row justify-between items-end mb-12">
+        <div class="max-w-2xl">
+          <h2 class="text-3xl font-bold text-slate-900 mb-4">8 Spezialisierte Funktionsbereiche</h2>
+          <p class="text-lg text-slate-600">
+            Entwickelt in Zusammenarbeit mit Immobiliensachverständigen – jeder Bereich deckt einen kritischen Teil des Prozesses ab.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- MiniFeature 1-8 -->
+        <div class="flex items-start gap-4 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300 cursor-default border border-transparent hover:border-slate-100">
+          <div class="bg-blue-50 p-2 rounded-lg text-blue-600 shrink-0"><svg class="w-5 h-5"><use href="#icon-bar-chart-3"></use></svg></div>
+          <div><h4 class="font-semibold text-slate-900 text-sm">Liegenschaftsbewertung</h4><p class="text-slate-500 text-sm mt-1">Ertragswert, Sachwert, Vergleichswert & DCF.</p></div>
+        </div>
+        <div class="flex items-start gap-4 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300 cursor-default border border-transparent hover:border-slate-100">
+          <div class="bg-blue-50 p-2 rounded-lg text-blue-600 shrink-0"><svg class="w-5 h-5"><use href="#icon-trending-up"></use></svg></div>
+          <div><h4 class="font-semibold text-slate-900 text-sm">Marktdaten-Analyse</h4><p class="text-slate-500 text-sm mt-1">Echtzeit-Zugriff auf Preise aller AT-Portale.</p></div>
+        </div>
+        <div class="flex items-start gap-4 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300 cursor-default border border-transparent hover:border-slate-100">
+          <div class="bg-blue-50 p-2 rounded-lg text-blue-600 shrink-0"><svg class="w-5 h-5"><use href="#icon-building"></use></svg></div>
+          <div><h4 class="font-semibold text-slate-900 text-sm">Bausubstanz</h4><p class="text-slate-500 text-sm mt-1">Systematische Zustandsanalyse & Bauteilkatalog.</p></div>
+        </div>
+        <div class="flex items-start gap-4 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300 cursor-default border border-transparent hover:border-slate-100">
+          <div class="bg-blue-50 p-2 rounded-lg text-blue-600 shrink-0"><svg class="w-5 h-5"><use href="#icon-calculator"></use></svg></div>
+          <div><h4 class="font-semibold text-slate-900 text-sm">Rendite-Kalkulation</h4><p class="text-slate-500 text-sm mt-1">Cash-Flow, Steueraspekte & Prognosen.</p></div>
+        </div>
+        <div class="flex items-start gap-4 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300 cursor-default border border-transparent hover:border-slate-100">
+          <div class="bg-blue-50 p-2 rounded-lg text-blue-600 shrink-0"><svg class="w-5 h-5"><use href="#icon-file-text"></use></svg></div>
+          <div><h4 class="font-semibold text-slate-900 text-sm">Grundbuch-Analyse</h4><p class="text-slate-500 text-sm mt-1">Eigentum, Lasten & Dienstbarkeiten prüfen.</p></div>
+        </div>
+        <div class="flex items-start gap-4 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300 cursor-default border border-transparent hover:border-slate-100">
+          <div class="bg-blue-50 p-2 rounded-lg text-blue-600 shrink-0"><svg class="w-5 h-5"><use href="#icon-map-pin"></use></svg></div>
+          <div><h4 class="font-semibold text-slate-900 text-sm">Lage-Bewertung</h4><p class="text-slate-500 text-sm mt-1">Infrastruktur, Lärm & Entwicklungspotenzial.</p></div>
+        </div>
+        <div class="flex items-start gap-4 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300 cursor-default border border-transparent hover:border-slate-100">
+          <div class="bg-blue-50 p-2 rounded-lg text-blue-600 shrink-0"><svg class="w-5 h-5"><use href="#icon-maximize"></use></svg></div>
+          <div><h4 class="font-semibold text-slate-900 text-sm">Flächenberechnung</h4><p class="text-slate-500 text-sm mt-1">ÖNORM B 1800 konform aus Plänen.</p></div>
+        </div>
+        <div class="flex items-start gap-4 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300 cursor-default border border-transparent hover:border-slate-100">
+          <div class="bg-blue-50 p-2 rounded-lg text-blue-600 shrink-0"><svg class="w-5 h-5"><use href="#icon-file-text"></use></svg></div>
+          <div><h4 class="font-semibold text-slate-900 text-sm">Gutachten-Generator</h4><p class="text-slate-500 text-sm mt-1">Vollautomatische Dokumentenerstellung.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Calculator Section -->
+  <section id="calculator" class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-blue-900 rounded-3xl p-8 md:p-12 shadow-2xl text-white overflow-hidden relative">
+        <div class="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-blue-500 rounded-full opacity-20 blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 -mb-20 -ml-20 w-72 h-72 bg-indigo-600 rounded-full opacity-20 blur-3xl"></div>
+        
+        <div class="grid lg:grid-cols-2 gap-16 relative z-10">
+          <!-- Left: Inputs -->
+          <div>
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-3xl font-bold">Ihr Einsparungspotenzial</h2>
             </div>
-
-            <div className="hidden md:flex items-center gap-8">
-              <button onClick={() => scrollTo('benefits')} className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Vorteile</button>
-              <button onClick={() => scrollTo('features')} className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Funktionen</button>
-              <button onClick={() => scrollTo('calculator')} className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">ROI Rechner</button>
-              <button onClick={() => scrollTo('contact')} className="bg-blue-600 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20">
-                Gespräch vereinbaren
+            
+            <!-- Toggle Switch -->
+            <div class="flex bg-blue-950/50 p-1 rounded-lg mb-8 w-fit border border-blue-700/30">
+              <button id="calc-btn-conservative" class="px-4 py-2 rounded-md text-sm font-medium transition-all text-blue-300 hover:text-white">
+                Konservativ (30%)
+              </button>
+              <button id="calc-btn-balanced" class="px-4 py-2 rounded-md text-sm font-medium transition-all bg-white text-blue-900 shadow-sm">
+                Ausgewogen (45%)
+              </button>
+              <button id="calc-btn-optimistic" class="px-4 py-2 rounded-md text-sm font-medium transition-all text-blue-300 hover:text-white">
+                Optimistisch (60%)
               </button>
             </div>
 
-            <button className="md:hidden text-slate-600" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              {mobileMenuOpen ? <X /> : <Menu />}
-            </button>
+            <p id="calc-mode-text" class="text-blue-100 mb-10 leading-relaxed">
+              Berechnen Sie Zeit und Kosten, die Sie mit digitalisierten Prozessen einsparen. 
+              Die Werte basieren auf einer ausgewogenen Schätzung der Zeitersparnis.
+            </p>
+
+            <div class="space-y-8">
+              <div>
+                <div class="flex justify-between mb-2">
+                  <label class="font-medium text-blue-100">Durchschnittliche Anzahl Gutachten</label>
+                  <span id="gutachten-value" class="font-bold text-white text-xl">3</span>
+                </div>
+                <input id="gutachten-slider" type="range" min="1" max="20" value="3" class="w-full h-2 bg-blue-800 rounded-lg appearance-none cursor-pointer accent-white">
+              </div>
+              
+              <div>
+                <div class="flex justify-between mb-2">
+                  <label class="font-medium text-blue-100">Durchschnittliche Arbeitszeit</label>
+                  <span id="zeit-value" class="font-bold text-white text-xl">6 h</span>
+                </div>
+                <input id="zeit-slider" type="range" min="2" max="15" step="0.5" value="6" class="w-full h-2 bg-blue-800 rounded-lg appearance-none cursor-pointer accent-white">
+              </div>
+
+              <div>
+                <div class="flex justify-between mb-2">
+                  <label class="font-medium text-blue-100">Stundensatz (€)</label>
+                  <span id="stundensatz-value" class="font-bold text-white text-xl">€ 120</span>
+                </div>
+                <input id="stundensatz-slider" type="range" min="50" max="300" step="10" value="120" class="w-full h-2 bg-blue-800 rounded-lg appearance-none cursor-pointer accent-white">
+              </div>
+            </div>
           </div>
+
+          <!-- Right: Results -->
+          <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 flex flex-col justify-center shadow-lg">
+            <div class="space-y-6">
+              <div class="flex justify-between items-center border-b border-white/10 pb-4">
+                <span class="text-blue-100 flex items-center gap-2"><svg class="w-4.5 h-4.5"><use href="#icon-clock"></use></svg> Zeitersparnis / Monat</span>
+                <span id="result-zeit" class="text-2xl font-bold text-white">0 Std.</span>
+              </div>
+              <div class="flex justify-between items-center border-b border-white/10 pb-4">
+                <span class="text-blue-100 flex items-center gap-2"><svg class="w-4.5 h-4.5"><use href="#icon-target"></use></svg> Mehr Gutachten möglich</span>
+                <span id="result-mehr" class="text-2xl font-bold text-green-300">+0</span>
+              </div>
+              <div class="pt-2">
+                <p class="text-blue-200 text-sm uppercase tracking-wide mb-1">Jährliches Potenzial</p>
+                <p id="result-jahr" class="text-5xl font-bold text-white">
+                  € 0
+                </p>
+              </div>
+              <a href="#contact" class="block w-full text-center mt-4 bg-white hover:bg-blue-50 text-blue-900 py-4 rounded-xl font-bold transition-all shadow-lg">
+                Jetzt Potenzial realisieren
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Use Cases -->
+  <section class="py-24 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl font-bold text-center text-slate-900 mb-12">Praxisbeispiele aus Österreich</h2>
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- UseCaseCard 1 -->
+        <div class="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+          <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="font-bold text-slate-800">Bankgutachten</h3>
+            <div class="p-1.5 bg-blue-100 rounded text-blue-700"><svg class="w-4 h-4"><use href="#icon-building"></use></svg></div>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Ausgangslage</p>
+              <p class="text-slate-600 text-sm">Sachverständigenbüro in Wien, 8-12 Verkehrswertgutachten/Monat. Zeitaufwand traditionell: 5-7h.</p>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+              <p class="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+                <svg class="w-3 h-3"><use href="#icon-check-circle"></use></svg> Lösung
+              </p>
+              <p class="text-slate-800 text-sm font-medium">Reduktion auf 3-4h durch automatisierte Daten. +3 Gutachten pro Monat möglich.</p>
+            </div>
+          </div>
+        </div>
+        <!-- UseCaseCard 2 -->
+        <div class="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+          <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="font-bold text-slate-800">Gerichtsgutachten</h3>
+            <div class="p-1.5 bg-blue-100 rounded text-blue-700"><svg class="w-4 h-4"><use href="#icon-building"></use></svg></div>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Ausgangslage</p>
+              <p class="text-slate-600 text-sm">SV in Graz, komplexe Streitfälle mit hoher Dokumentationspflicht und Haftungsrisiko.</p>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+              <p class="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+                <svg class="w-3 h-3"><use href="#icon-check-circle"></use></svg> Lösung
+              </p>
+              <p class="text-slate-800 text-sm font-medium">Rechtssichere Archivierung und lückenlose Herleitung minimieren Nachfragen.</p>
+            </div>
+          </div>
+        </div>
+        <!-- UseCaseCard 3 -->
+        <div class="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+          <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="font-bold text-slate-800">Zinshaus-Portfolios</h3>
+            <div class="p-1.5 bg-blue-100 rounded text-blue-700"><svg class="w-4 h-4"><use href="#icon-building"></use></svg></div>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Ausgangslage</p>
+              <p class="text-slate-600 text-sm">Bewertung von 15 Zinshäusern für Investor. Traditionelle Dauer: 8-10 Wochen.</p>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+              <p class="text-xs font-semibold text-green-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+                <svg class="w-3 h-3"><use href="#icon-check-circle"></use></svg> Lösung
+              </p>
+              <p class="text-slate-800 text-sm font-medium">Parallele Bearbeitung reduziert Projektdauer auf 4-5 Wochen bei höherer Konsistenz.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Process Flow -->
+  <section class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl font-bold text-slate-900 mb-4">So funktioniert's</h2>
+        <p class="text-slate-600">Integration in Ihren Workflow ohne Prozessbruch.</p>
+      </div>
+      
+      <div class="relative">
+        <!-- Connecting Line (Desktop) -->
+        <div class="hidden md:block absolute top-8 left-0 w-full h-0.5 bg-slate-100 -z-10"></div>
+        
+        <div class="grid md:grid-cols-4 gap-12">
+          <!-- Step 1-4 -->
+          <div class="relative flex flex-col items-center text-center group">
+            <div class="w-16 h-16 bg-white border-2 border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-sm group-hover:border-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 mb-6 relative z-10">1</div>
+            <h3 class="text-lg font-bold text-slate-900 mb-2">Datenerfassung</h3>
+            <p class="text-slate-600 text-sm max-w-xs">Grunddaten, Adresse und Unterlagen eingeben oder hochladen.</p>
+          </div>
+          <div class="relative flex flex-col items-center text-center group">
+            <div class="w-16 h-16 bg-white border-2 border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-sm group-hover:border-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 mb-6 relative z-10">2</div>
+            <h3 class="text-lg font-bold text-slate-900 mb-2">KI-Analyse</h3>
+            <p class="text-slate-600 text-sm max-w-xs">System sammelt Marktdaten und berechnet Grundlagen.</p>
+          </div>
+          <div class="relative flex flex-col items-center text-center group">
+            <div class="w-16 h-16 bg-white border-2 border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-sm group-hover:border-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 mb-6 relative z-10">3</div>
+            <h3 class="text-lg font-bold text-slate-900 mb-2">Expertise</h3>
+            <p class="text-slate-600 text-sm max-w-xs">Sie prüfen Ergebnisse und ergänzen Ihre Facheinschätzung.</p>
+          </div>
+          <div class="relative flex flex-col items-center text-center group">
+            <div class="w-16 h-16 bg-white border-2 border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-sm group-hover:border-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 mb-6 relative z-10">4</div>
+            <h3 class="text-lg font-bold text-slate-900 mb-2">Fertigstellung</h3>
+            <p class="text-slate-600 text-sm max-w-xs">Automatischer Export des fertigen Gutachtens inkl. Anlagen.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Standards & Trust -->
+  <section class="py-20 bg-slate-50 text-center border-t border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h3 class="text-slate-500 font-semibold uppercase tracking-widest mb-8 text-sm">Konform mit österreichischen Standards</h3>
+      <div class="flex flex-wrap justify-center gap-4">
+        <div class="px-6 py-3 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold hover:border-blue-500 hover:text-blue-600 hover:shadow-md transition-all cursor-default">ÖNORM B 1800</div>
+        <div class="px-6 py-3 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold hover:border-blue-500 hover:text-blue-600 hover:shadow-md transition-all cursor-default">IVS Standards</div>
+        <div class="px-6 py-3 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold hover:border-blue-500 hover:text-blue-600 hover:shadow-md transition-all cursor-default">EAG Konform</div>
+        <div class="px-6 py-3 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold hover:border-blue-500 hover:text-blue-600 hover:shadow-md transition-all cursor-default">LBG Gesetz</div>
+        <div class="px-6 py-3 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold hover:border-blue-500 hover:text-blue-600 hover:shadow-md transition-all cursor-default">II. BV</div>
+        <div class="px-6 py-3 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold hover:border-blue-500 hover:text-blue-600 hover:shadow-md transition-all cursor-default">DSGVO Safe</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="py-24 bg-white">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h2 class="text-4xl font-bold text-slate-900 mb-6">Interessiert?</h2>
+      <p class="text-xl text-slate-600 mb-12 leading-relaxed">
+        Erfahren Sie mehr darüber, wie digitale Tools Ihre Gutachtertätigkeit unterstützen können.
+      </p>
+
+      <div class="grid md:grid-cols-5 gap-6 max-w-4xl mx-auto items-center">
+        <!-- Mail Button -->
+        <a href="mailto:kovac@christian-kovac.at" class="group p-6 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 transition-all md:col-span-2">
+          <div class="w-12 h-12 mx-auto bg-white rounded-full flex items-center justify-center shadow-sm mb-4 text-blue-600 group-hover:scale-110 transition-transform">
+            <svg class="w-6 h-6"><use href="#icon-mail"></use></svg>
+          </div>
+          <h3 class="font-bold text-slate-900">E-Mail</h3>
+          <p class="text-sm text-slate-500">kovac@christian-kovac.at</p>
+        </a>
+
+        <!-- Portrait Photo -->
+        <div class="flex flex-col items-center justify-center order-first md:order-none">
+          <img 
+            src="https://i.imgur.com/XtLXnn6.jpeg" 
+            alt="Porträt Christian Kovac" 
+            class="w-40 h-40 rounded-full object-cover shadow-lg border-4 border-white"
+          >
+          <p class="mt-4 font-bold text-slate-900 text-lg">Dr. Christian Kovac</p>
         </div>
         
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-100 bg-white p-4 space-y-2 absolute w-full shadow-xl">
-            <button onClick={() => scrollTo('benefits')} className="block w-full text-left px-4 py-3 rounded-lg hover:bg-slate-50">Vorteile</button>
-            <button onClick={() => scrollTo('features')} className="block w-full text-left px-4 py-3 rounded-lg hover:bg-slate-50">Funktionen</button>
-            <button onClick={() => scrollTo('calculator')} className="block w-full text-left px-4 py-3 rounded-lg hover:bg-slate-50">ROI Rechner</button>
-            <button onClick={() => scrollTo('contact')} className="block w-full mt-4 bg-blue-600 text-white px-4 py-3 rounded-lg font-medium text-center">Kontakt</button>
+        <!-- Phone Button -->
+        <a href="tel:+436645446" class="group p-6 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 transition-all md:col-span-2">
+          <div class="w-12 h-12 mx-auto bg-white rounded-full flex items-center justify-center shadow-sm mb-4 text-blue-600 group-hover:scale-110 transition-transform">
+            <svg class="w-6 h-6"><use href="#icon-phone"></use></svg>
           </div>
-        )}
-      </nav>
-
-      {/* Hero Section */}
-      <section className="relative pt-20 pb-32 overflow-hidden bg-blue-950">
-        {/* Abstract Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-blue-600 opacity-20 blur-3xl"></div>
-          <div className="absolute top-1/2 -left-24 w-72 h-72 rounded-full bg-indigo-500 opacity-20 blur-3xl"></div>
-          {/* Subtle Grid Pattern */}
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex flex-wrap justify-center gap-2 mb-8 animate-in slide-in-from-bottom-4 fade-in duration-700">
-            <Badge icon={<span className="text-lg">🇦🇹</span>} text="ÖNORM-konform" />
-            <Badge icon={<Shield size={14}/>} text="Gerichtsfest" />
-            <Badge icon={<Building size={14}/>} text="Bankanerkannt" />
-            <Badge icon={<CheckCircle size={14}/>} text="DSGVO-sicher" />
-          </div>
-
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white tracking-tight mb-6 leading-tight animate-in slide-in-from-bottom-8 fade-in duration-1000">
-            Immobiliengutachten <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">im digitalen Zeitalter</span>
-          </h1>
-
-          <p className="text-lg md:text-xl text-blue-100 max-w-3xl mx-auto mb-10 leading-relaxed animate-in slide-in-from-bottom-10 fade-in duration-1000">
-            KI-gestützte Werkzeuge speziell für österreichische Sachverständige. 
-            Erstellen Sie Gutachten effizienter – ohne Kompromisse bei Qualität und Genauigkeit.
-          </p>
-
-          <div className="flex flex-col sm:flex-row justify-center gap-4 animate-in slide-in-from-bottom-12 fade-in duration-1000">
-            <button onClick={() => scrollTo('calculator')} className="bg-white text-blue-900 hover:bg-blue-50 px-8 py-4 rounded-full font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-2">
-              <Calculator size={20} /> Ersparnis berechnen
-            </button>
-            <button onClick={() => scrollTo('features')} className="bg-blue-800/30 hover:bg-blue-800/50 backdrop-blur-sm text-white border border-blue-400/30 px-8 py-4 rounded-full font-bold text-lg transition-all flex items-center justify-center gap-2">
-              Funktionen entdecken <ArrowRight size={20} />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Benefits */}
-      <section id="benefits" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">Warum KI-gestützte Bewertung?</h2>
-            <p className="text-lg text-slate-600">
-              Die Immobilienbewertung ist komplex. Moderne Tools unterstützen Sie dabei, Ihre Expertise skalierbar zu machen.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard 
-              icon={Clock}
-              title="Zeitersparnis"
-              description="Automatisierung repetitiver Aufgaben wie Marktdatenrecherche, Flächenberechnungen und Dokumentenerstellung."
-              highlight="2-3 Stunden pro Gutachten"
-            />
-            <FeatureCard 
-              icon={Target}
-              title="Höhere Genauigkeit"
-              description="Zugriff auf aktuelle Marktdaten aus allen relevanten Quellen. Systematische Bewertungsmethodik nach österreichischen Standards."
-              highlight="Datenbasis: 50.000+ Objekte"
-            />
-            <FeatureCard 
-              icon={FileText}
-              title="Prof. Dokumentation"
-              description="Strukturierte, nachvollziehbare Gutachten mit allen erforderlichen Anlagen – individuell anpassbar nach Ihren Vorgaben."
-              highlight="Bank-, Gerichts- & Kurzgutachten"
-            />
-            <FeatureCard 
-              icon={RefreshCw}
-              title="Immer Aktuell"
-              description="Automatische Updates von Marktpreisen, ÖNORM-Anforderungen und rechtlichen Rahmenbedingungen."
-              highlight="Tägliche Daten-Updates"
-            />
-            <FeatureCard 
-              icon={Shield}
-              title="Rechtssicherheit"
-              description="Einhaltung aller relevanten österreichischen Normen, Standards und rechtlichen Vorgaben."
-              highlight="IVS, EAG, LBG konform"
-            />
-            <FeatureCard 
-              icon={TrendingUp}
-              title="Skalierbarkeit"
-              description="Bearbeiten Sie mehr Aufträge ohne zusätzliches Personal oder längere Arbeitszeiten."
-              highlight="+30% mehr Kapazität"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Core Features (Compact Grid) */}
-      <section id="features" className="py-24 bg-slate-50 border-y border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-12">
-            <div className="max-w-2xl">
-              <h2 className="text-3xl font-bold text-slate-900 mb-4">8 Spezialisierte Funktionsbereiche</h2>
-              <p className="text-lg text-slate-600">
-                Entwickelt in Zusammenarbeit mit Immobiliensachverständigen – jeder Bereich deckt einen kritischen Teil des Prozesses ab.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <MiniFeature icon={BarChart3} title="Liegenschaftsbewertung" desc="Ertragswert, Sachwert, Vergleichswert & DCF." />
-            <MiniFeature icon={TrendingUp} title="Marktdaten-Analyse" desc="Echtzeit-Zugriff auf Preise aller AT-Portale." />
-            <MiniFeature icon={Building} title="Bausubstanz" desc="Systematische Zustandsanalyse & Bauteilkatalog." />
-            <MiniFeature icon={Calculator} title="Rendite-Kalkulation" desc="Cash-Flow, Steueraspekte & Prognosen." />
-            <MiniFeature icon={FileText} title="Grundbuch-Analyse" desc="Eigentum, Lasten & Dienstbarkeiten prüfen." />
-            <MiniFeature icon={MapPin} title="Lage-Bewertung" desc="Infrastruktur, Lärm & Entwicklungspotenzial." />
-            <MiniFeature icon={Maximize} title="Flächenberechnung" desc="ÖNORM B 1800 konform aus Plänen." />
-            <MiniFeature icon={FileText} title="Gutachten-Generator" desc="Vollautomatische Dokumentenerstellung." />
-          </div>
-        </div>
-      </section>
-
-      {/* Calculator Section */}
-      <section id="calculator" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-blue-900 rounded-3xl p-8 md:p-12 shadow-2xl text-white overflow-hidden relative">
-            <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-blue-500 rounded-full opacity-20 blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-72 h-72 bg-indigo-600 rounded-full opacity-20 blur-3xl"></div>
-            
-            <div className="grid lg:grid-cols-2 gap-16 relative z-10">
-              {/* Left: Inputs */}
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-3xl font-bold">Ihr Einsparungspotenzial</h2>
-                </div>
-                
-                {/* Toggle Switch */}
-                <div className="flex bg-blue-950/50 p-1 rounded-lg mb-8 w-fit border border-blue-700/30">
-                  <button 
-                    onClick={() => setCalcMode('conservative')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${calcMode === 'conservative' ? 'bg-white text-blue-900 shadow-sm' : 'text-blue-300 hover:text-white'}`}
-                  >
-                    Konservativ (30%)
-                  </button>
-                  <button 
-                    onClick={() => setCalcMode('balanced')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${calcMode === 'balanced' ? 'bg-white text-blue-900 shadow-sm' : 'text-blue-300 hover:text-white'}`}
-                  >
-                    Ausgewogen (45%)
-                  </button>
-                  <button 
-                    onClick={() => setCalcMode('optimistic')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${calcMode === 'optimistic' ? 'bg-white text-blue-900 shadow-sm' : 'text-blue-300 hover:text-white'}`}
-                  >
-                    Optimistisch (60%)
-                  </button>
-                </div>
-
-                <p className="text-blue-100 mb-10 leading-relaxed">
-                  Berechnen Sie Zeit und Kosten, die Sie mit digitalisierten Prozessen einsparen. 
-                  Die Werte basieren auf {getModeText()} Schätzung der Zeitersparnis.
-                </p>
-
-                <div className="space-y-8">
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <label className="font-medium text-blue-100">Durchschnittliche Anzahl Gutachten</label>
-                      <span className="font-bold text-white text-xl">{calcInputs.gutachten}</span>
-                    </div>
-                    <input 
-                      type="range" min="1" max="20" 
-                      value={calcInputs.gutachten}
-                      onChange={(e) => setCalcInputs({...calcInputs, gutachten: parseInt(e.target.value)})}
-                      className="w-full h-2 bg-blue-800 rounded-lg appearance-none cursor-pointer accent-white"
-                    />
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <label className="font-medium text-blue-100">Durchschnittliche Arbeitszeit</label>
-                      <span className="font-bold text-white text-xl">{calcInputs.zeitaufwand} h</span>
-                    </div>
-                    <input 
-                      type="range" min="2" max="15" step="0.5"
-                      value={calcInputs.zeitaufwand}
-                      onChange={(e) => setCalcInputs({...calcInputs, zeitaufwand: parseFloat(e.target.value)})}
-                      className="w-full h-2 bg-blue-800 rounded-lg appearance-none cursor-pointer accent-white"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <label className="font-medium text-blue-100">Stundensatz (€)</label>
-                      <span className="font-bold text-white text-xl">€ {calcInputs.stundensatz}</span>
-                    </div>
-                    <input 
-                      type="range" min="50" max="300" step="10"
-                      value={calcInputs.stundensatz}
-                      onChange={(e) => setCalcInputs({...calcInputs, stundensatz: parseInt(e.target.value)})}
-                      className="w-full h-2 bg-blue-800 rounded-lg appearance-none cursor-pointer accent-white"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Right: Results */}
-              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 flex flex-col justify-center shadow-lg">
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                    <span className="text-blue-100 flex items-center gap-2"><Clock size={18}/> Zeitersparnis / Monat</span>
-                    <span className="text-2xl font-bold text-white">{calcResults.zeitGespart} Std.</span>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                    <span className="text-blue-100 flex items-center gap-2"><Target size={18}/> Mehr Gutachten möglich</span>
-                    <span className="text-2xl font-bold text-green-300">+{calcResults.mehrGutachten}</span>
-                  </div>
-                  <div className="pt-2">
-                    <p className="text-blue-200 text-sm uppercase tracking-wide mb-1">Jährliches Potenzial</p>
-                    <p className="text-5xl font-bold text-white">
-                      € {calcResults.jahresErsparnis.toLocaleString('de-AT')}
-                    </p>
-                  </div>
-                  <button onClick={() => scrollTo('contact')} className="w-full mt-4 bg-white hover:bg-blue-50 text-blue-900 py-4 rounded-xl font-bold transition-all shadow-lg">
-                    Jetzt Potenzial realisieren
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Use Cases */}
-      <section className="py-24 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">Praxisbeispiele aus Österreich</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <UseCaseCard 
-              title="Bankgutachten"
-              scenario="Sachverständigenbüro in Wien, 8-12 Verkehrswertgutachten/Monat. Zeitaufwand traditionell: 5-7h."
-              result="Reduktion auf 3-4h durch automatisierte Daten. +3 Gutachten pro Monat möglich."
-            />
-            <UseCaseCard 
-              title="Gerichtsgutachten"
-              scenario="SV in Graz, komplexe Streitfälle mit hoher Dokumentationspflicht und Haftungsrisiko."
-              result="Rechtssichere Archivierung und lückenlose Herleitung minimieren Nachfragen."
-            />
-            <UseCaseCard 
-              title="Zinshaus-Portfolios"
-              scenario="Bewertung von 15 Zinshäusern für Investor. Traditionelle Dauer: 8-10 Wochen."
-              result="Parallele Bearbeitung reduziert Projektdauer auf 4-5 Wochen bei höherer Konsistenz."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Process Flow */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">So funktioniert's</h2>
-            <p className="text-slate-600">Integration in Ihren Workflow ohne Prozessbruch.</p>
-          </div>
-          
-          <div className="relative">
-            {/* Connecting Line (Desktop) */}
-            <div className="hidden md:block absolute top-8 left-0 w-full h-0.5 bg-slate-100 -z-10"></div>
-            
-            <div className="grid md:grid-cols-4 gap-12">
-              <Step number="1" title="Datenerfassung" desc="Grunddaten, Adresse und Unterlagen eingeben oder hochladen." />
-              <Step number="2" title="KI-Analyse" desc="System sammelt Marktdaten und berechnet Grundlagen." />
-              <Step number="3" title="Expertise" desc="Sie prüfen Ergebnisse und ergänzen Ihre Facheinschätzung." />
-              <Step number="4" title="Fertigstellung" desc="Automatischer Export des fertigen Gutachtens inkl. Anlagen." />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Standards & Trust (Updated to Light Theme) */}
-      <section className="py-20 bg-slate-50 text-center border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h3 className="text-slate-500 font-semibold uppercase tracking-widest mb-8 text-sm">Konform mit österreichischen Standards</h3>
-          <div className="flex flex-wrap justify-center gap-4">
-            {['ÖNORM B 1800', 'IVS Standards', 'EAG Konform', 'LBG Gesetz', 'II. BV', 'DSGVO Safe'].map((std) => (
-              <div key={std} className="px-6 py-3 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold hover:border-blue-500 hover:text-blue-600 hover:shadow-md transition-all cursor-default">
-                {std}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contact" className="py-24 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-slate-900 mb-6">Interessiert?</h2>
-          <p className="text-xl text-slate-600 mb-12 leading-relaxed">
-            Erfahren Sie mehr darüber, wie digitale Tools Ihre Gutachtertätigkeit unterstützen können.
-          </p>
-
-          <div className="grid md:grid-cols-5 gap-6 max-w-4xl mx-auto items-center">
-            {/* Mail Button */}
-            <button onClick={() => window.location.href = 'mailto:kovac@christian-kovac.at'} className="group p-6 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 transition-all md:col-span-2">
-              <div className="w-12 h-12 mx-auto bg-white rounded-full flex items-center justify-center shadow-sm mb-4 text-blue-600 group-hover:scale-110 transition-transform">
-                <Mail size={24} />
-              </div>
-              <h3 className="font-bold text-slate-900">E-Mail</h3>
-              <p className="text-sm text-slate-500">kovac@christian-kovac.at</p>
-            </button>
-
-            {/* Portrait Photo */}
-            <div className="flex flex-col items-center justify-center order-first md:order-none">
-              <img 
-                src="https://i.imgur.com/XtLXnn6.jpeg" 
-                alt="Porträt Christian Kovac" 
-                className="w-40 h-40 rounded-full object-cover shadow-lg border-4 border-white"
-              />
-              <p className="mt-4 font-bold text-slate-900 text-lg">Dr. Christian Kovac</p>
-            </div>
-            
-            {/* Phone Button */}
-            <button onClick={() => window.location.href = 'tel:+436645446'} className="group p-6 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 transition-all md:col-span-2">
-              <div className="w-12 h-12 mx-auto bg-white rounded-full flex items-center justify-center shadow-sm mb-4 text-blue-600 group-hover:scale-110 transition-transform">
-                <Phone size={24} />
-              </div>
-              <h3 className="font-bold text-slate-900">Telefon</h3>
-              <p className="text-sm text-slate-500">+43(0)0664 544 6</p>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-12 text-center">
-        <div className="max-w-7xl mx-auto px-4">
-          <p className="font-bold text-slate-900">© 2025 KI-Consulting für österreichische Sachverständige</p>
-          <p className="text-slate-500 text-sm mt-2">🇦🇹 Spezialisiert auf österreichische Normen und Rechtslage</p>
-        </div>
-      </footer>
+          <h3 class="font-bold text-slate-900">Telefon</h3>
+          <p class="text-sm text-slate-500">+43(0)0664 544 6</p>
+        </a>
+      </div>
     </div>
-  );
-}
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-12 text-center">
+    <div class="max-w-7xl mx-auto px-4">
+      <p class="font-bold text-slate-900">© 2025 KI-Consulting für österreichische Sachverständige</p>
+      <p class="text-slate-500 text-sm mt-2">🇦🇹 Spezialisiert auf österreichische Normen und Rechtslage</p>
+    </div>
+  </footer>
+
+  <!-- JavaScript für Interaktivität -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // --- Mobile Menü Logik ---
+      const menuButton = document.getElementById('menu-button');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const menuIconOpen = document.getElementById('menu-icon-open');
+      const menuIconClose = document.getElementById('menu-icon-close');
+
+      menuButton.addEventListener('click', () => {
+        const isOpen = mobileMenu.classList.toggle('hidden');
+        menuIconOpen.classList.toggle('hidden', !isOpen);
+        menuIconClose.classList.toggle('hidden', isOpen);
+      });
+
+      // Schließe Menü, wenn auf einen Link geklickt wird
+      mobileMenu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          mobileMenu.classList.add('hidden');
+          menuIconOpen.classList.remove('hidden');
+          menuIconClose.classList.add('hidden');
+        });
+      });
+      
+      // --- Smooth Scroll für Nav-Links (Desktop) ---
+      document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+          // Wir verhindern das Standard-Sprungverhalten nur, wenn es kein mobiler Menü-Link ist
+          // (da diese bereits im mobilen Menü-Code behandelt werden)
+          if (!this.closest('#mobile-menu')) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            document.querySelector(targetId).scrollIntoView({
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
+      
+      // --- ROI Rechner Logik ---
+      const inputs = {
+        gutachten: document.getElementById('gutachten-slider'),
+        zeitaufwand: document.getElementById('zeit-slider'),
+        stundensatz: document.getElementById('stundensatz-slider')
+      };
+      
+      const outputs = {
+        gutachten: document.getElementById('gutachten-value'),
+        zeitaufwand: document.getElementById('zeit-value'),
+        stundensatz: document.getElementById('stundensatz-value'),
+        zeitGespart: document.getElementById('result-zeit'),
+        mehrGutachten: document.getElementById('result-mehr'),
+        jahresErsparnis: document.getElementById('result-jahr'),
+        modeText: document.getElementById('calc-mode-text')
+      };
+      
+      const modeButtons = {
+        conservative: document.getElementById('calc-btn-conservative'),
+        balanced: document.getElementById('calc-btn-balanced'),
+        optimistic: document.getElementById('calc-btn-optimistic')
+      };
+      
+      let currentMode = 'balanced'; // Standard
+
+      function calculateROI() {
+        const gutachten = parseFloat(inputs.gutachten.value);
+        const zeitaufwand = parseFloat(inputs.zeitaufwand.value);
+        const stundensatz = parseFloat(inputs.stundensatz.value);
+        
+        let zeitersparnisProzent;
+        if (currentMode === 'optimistic') {
+          zeitersparnisProzent = 0.60;
+        } else if (currentMode === 'conservative') {
+          zeitersparnisProzent = 0.30;
+        } else { // 'balanced'
+          zeitersparnisProzent = 0.45;
+        }
+        
+        const gesamtStundenAktuell = gutachten * zeitaufwand;
+        const zeitGespart = gesamtStundenAktuell * zeitersparnisProzent;
+        const kostenMonat = zeitGespart * stundensatz;
+        const jahresErsparnis = kostenMonat * 12;
+        
+        const neueZeitProGutachten = zeitaufwand * (1 - zeitersparnisProzent);
+        const mehrGutachten = neueZeitProGutachten > 0 ? Math.floor(zeitGespart / neueZeitProGutachten) : 0;
+
+        // Update UI
+        outputs.gutachten.textContent = gutachten;
+        outputs.zeitaufwand.textContent = `${zeitaufwand} h`;
+        outputs.stundensatz.textContent = `€ ${stundensatz}`;
+        
+        outputs.zeitGespart.textContent = `${Math.round(zeitGespart)} Std.`;
+        outputs.mehrGutachten.textContent = `+${mehrGutachten}`;
+        outputs.jahresErsparnis.textContent = `€ ${jahresErsparnis.toLocaleString('de-AT')}`;
+        
+        if (currentMode === 'optimistic') {
+          outputs.modeText.textContent = 'Berechnen Sie Zeit und Kosten... Die Werte basieren auf einer optimistischen Schätzung der Zeitersparnis.';
+        } else if (currentMode === 'conservative') {
+          outputs.modeText.textContent = 'Berechnen Sie Zeit und Kosten... Die Werte basieren auf einer konservativen Schätzung der Zeitersparnis.';
+        } else {
+          outputs.modeText.textContent = 'Berechnen Sie Zeit und Kosten... Die Werte basieren auf einer ausgewogenen Schätzung der Zeitersparnis.';
+        }
+      }
+      
+      function setCalcMode(mode) {
+        currentMode = mode;
+        
+        // Update button styles
+        Object.keys(modeButtons).forEach(key => {
+          const btn = modeButtons[key];
+          btn.classList.toggle('bg-white', key === mode);
+          btn.classList.toggle('text-blue-900', key === mode);
+          btn.classList.toggle('shadow-sm', key === mode);
+          btn.classList.toggle('text-blue-300', key !== mode);
+          btn.classList.toggle('hover:text-white', key !== mode);
+        });
+        
+        calculateROI();
+      }
+
+      // Event Listeners für Slider
+      Object.values(inputs).forEach(input => {
+        input.addEventListener('input', calculateROI);
+      });
+      
+      // Event Listeners für Modus-Buttons
+      modeButtons.conservative.addEventListener('click', () => setCalcMode('conservative'));
+      modeButtons.balanced.addEventListener('click', () => setCalcMode('balanced'));
+      modeButtons.optimistic.addEventListener('click', () => setCalcMode('optimistic'));
+
+      // Initiale Berechnung beim Laden der Seite
+      calculateROI();
+    });
+  </script>
+</body>
+</html>
